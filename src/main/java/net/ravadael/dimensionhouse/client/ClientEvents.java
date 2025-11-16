@@ -1,6 +1,5 @@
 package net.ravadael.dimensionhouse.client;
 
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -14,7 +13,11 @@ public class ClientEvents {
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
         if (KeyBindings.TELEPORT_KEY.consumeClick()) {
-            ModPackets.sendToServer(new TeleportToHousePacket());
+            System.out.println("H key pressed! Sending teleport packet...");
+            // Safety: Only send if channel is initialized
+            if (ModPackets.CHANNEL != null) {
+                ModPackets.CHANNEL.sendToServer(new TeleportToHousePacket());
+            }
         }
     }
 }

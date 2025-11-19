@@ -9,7 +9,6 @@ import java.util.function.Supplier;
 
 public class TeleportToHousePacket {
 
-    // Pas de données à envoyer : paquet "vide"
     public TeleportToHousePacket() {}
 
     public static void encode(TeleportToHousePacket msg, FriendlyByteBuf buf) {
@@ -17,7 +16,6 @@ public class TeleportToHousePacket {
     }
 
     public static TeleportToHousePacket decode(FriendlyByteBuf buf) {
-        // paquet sans données -> on retourne juste une nouvelle instance
         return new TeleportToHousePacket();
     }
 
@@ -26,10 +24,10 @@ public class TeleportToHousePacket {
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player != null) {
-                HouseTeleporter.teleportToHouse(player);
+                // → c'est ici que tout se joue
+                HouseTeleporter.handleTeleportKey(player);
             }
         });
-
         context.setPacketHandled(true);
     }
 }

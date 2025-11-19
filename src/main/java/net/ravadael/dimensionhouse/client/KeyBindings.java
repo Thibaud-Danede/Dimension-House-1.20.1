@@ -9,6 +9,6 @@ public class KeyBindings {
             "key.dimensionhouse.teleport",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_H,
-            "key.categories.misc"
+            "key.categories.dimensionhouse"
     );
 }

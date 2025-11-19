@@ -14,7 +14,10 @@ public class HouseTeleporter {
     public static void teleportToHouse(ServerPlayer player) {
         ServerLevel targetWorld = player.server.getLevel(HOUSE_DIMENSION);
         if (targetWorld != null) {
+            // Coordonnées simples pour tester
             player.teleportTo(targetWorld, 0.5, 100, 0.5, player.getYRot(), player.getXRot());
+        } else {
+            System.out.println("Target dimension not loaded!");
         }
     }
 }

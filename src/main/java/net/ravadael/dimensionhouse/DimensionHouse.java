@@ -10,6 +10,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.ravadael.dimensionhouse.block.ModBlocks;
+import net.ravadael.dimensionhouse.blockentity.ModBlockEntities;
+import net.ravadael.dimensionhouse.entity.ModEntities;
 import net.ravadael.dimensionhouse.network.ModPackets;
 import org.slf4j.Logger;
 
@@ -28,6 +31,15 @@ public class DimensionHouse {
 
         // événements Forge (ServerStarting, etc.)
         MinecraftForge.EVENT_BUS.register(this);
+
+        // Entitée faille
+        ModEntities.register(modEventBus);
+
+        // Block faille
+        ModBlocks.register(modEventBus);
+
+        // Effet portail de l'end
+        ModBlockEntities.register(modEventBus);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

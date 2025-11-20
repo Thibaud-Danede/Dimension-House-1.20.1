@@ -1,11 +1,17 @@
 package net.ravadael.dimensionhouse.world;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.ravadael.dimensionhouse.entity.ModEntities;
+import net.ravadael.dimensionhouse.entity.RiftEntity;
 
 public class HouseTeleporter {
 
@@ -91,20 +97,97 @@ public class HouseTeleporter {
             return;
         }
 
-        double x = nbt.getDouble(NBT_RETURN_X);
-        double y = nbt.getDouble(NBT_RETURN_Y);
-        double z = nbt.getDouble(NBT_RETURN_Z);
+        double savedX = nbt.getDouble(NBT_RETURN_X);
+        double savedY = nbt.getDouble(NBT_RETURN_Y);
+        double savedZ = nbt.getDouble(NBT_RETURN_Z);
         float yaw = nbt.getFloat(NBT_RETURN_YAW);
         float pitch = nbt.getFloat(NBT_RETURN_PITCH);
 
-        player.teleportTo(targetWorld, x, y, z, yaw, pitch);
+        BlockPos portalBase = BlockPos.containing(savedX, savedY, savedZ);
 
-        // Optionnel : tu peux nettoyer les données après retour si tu veux
-        // nbt.remove(NBT_RETURN_DIM);
-        // nbt.remove(NBT_RETURN_X);
-        // nbt.remove(NBT_RETURN_Y);
-        // nbt.remove(NBT_RETURN_Z);
-        // nbt.remove(NBT_RETURN_YAW);
-        // nbt.remove(NBT_RETURN_PITCH);
+        // Position de la faille au point retour
+        Vec3 portalPos = Vec3.atBottomCenterOf(portalBase);
+
+        // Position safe à 6–12 blocs de distance
+        Vec3 safePos = findNearbySafePos(targetWorld, portalBase, 2, 2);
+
+        // Yaw du joueur = dos à la faille
+        float yawAway = yawAwayFromPortal(safePos, portalPos);
+
+        // Pitch tu peux garder 0 (horizontale) ou reprendre celui sauvegardé
+        float pitchOut = 0.0F;
+
+        // Téléport du joueur
+        player.teleportTo(targetWorld, safePos.x, safePos.y, safePos.z, yawAway, pitchOut);
+
+        // Spawn de la faille de retour (30s), sauf si déjà là
+        spawnReturnRiftIfAbsent(targetWorld, portalPos);
+
+    }
+
+    private static Vec3 findNearbySafePos(ServerLevel level, BlockPos base, int minRadius, int maxRadius) {
+
+        // On commence à minRadius pour forcer une distance minimale à la faille
+        for (int r = minRadius; r <= maxRadius; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+
+                    // On ne garde que "l'anneau" à distance r (pas l'intérieur),
+                    // sinon on retombe sur des positions trop proches
+                    if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
+
+                    BlockPos candidate = base.offset(dx, 0, dz);
+
+                    // on teste quelques hauteurs autour du Y
+                    for (int dy = 0; dy <= 3; dy++) {
+                        BlockPos feet = candidate.above(dy);
+                        if (isStandable(level, feet)) {
+                            return Vec3.atBottomCenterOf(feet);
+                        }
+                    }
+                }
+            }
+        }
+
+        return Vec3.atBottomCenterOf(base); // fallback
+    }
+
+    private static boolean isStandable(ServerLevel level, BlockPos feet) {
+        BlockState below = level.getBlockState(feet.below());
+        if (!below.isSolid()) return false; // il faut un sol
+
+        // deux blocs d'air pour tenir debout
+        if (!level.isEmptyBlock(feet)) return false;
+        if (!level.isEmptyBlock(feet.above())) return false;
+
+        return true;
+    }
+
+    private static void spawnReturnRiftIfAbsent(ServerLevel level, Vec3 portalPos) {
+        // évite de spammer plusieurs failles si on revient plusieurs fois
+        AABB box = new AABB(portalPos, portalPos).inflate(1.5);
+        boolean already = !level.getEntitiesOfClass(RiftEntity.class, box).isEmpty();
+        if (already) return;
+
+        RiftEntity rift = new RiftEntity(ModEntities.RIFT.get(), level);
+        rift.setPos(portalPos.x, portalPos.y, portalPos.z);
+        level.addFreshEntity(rift);
+    }
+
+    private static float yawAwayFromPortal(Vec3 playerPos, Vec3 portalPos) {
+        double dx = portalPos.x - playerPos.x;
+        double dz = portalPos.z - playerPos.z;
+
+        // yaw qui regarde VERS le portail
+        float yawToPortal = (float)(Math.toDegrees(Math.atan2(dz, dx)) - 90F);
+
+        // yaw qui regarde A L'OPPOSE du portail
+        float yawAway = yawToPortal + 180F;
+
+        // normalisation optionnelle dans [-180; 180]
+        while (yawAway > 180F) yawAway -= 360F;
+        while (yawAway < -180F) yawAway += 360F;
+
+        return yawAway;
     }
 }

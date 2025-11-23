@@ -28,40 +28,42 @@ public class RiftEntity extends Entity {
     public void tick() {
         super.tick();
 
-        if (!level().isClientSide) {
-            // expire au bout de 30s tant que le chunk reste chargé
-            if (this.tickCount >= LIFETIME_TICKS) {
-                this.discard();
-                return;
+        // =========================
+        // ✅ CLIENT : pas de particules pour l’instant
+        // =========================
+        if (level().isClientSide) {
+            return;
+        }
+
+        // =========================
+        // ✅ SERVEUR : lifetime + TP
+        // =========================
+        if (this.tickCount >= LIFETIME_TICKS) {
+            this.discard();
+            return;
+        }
+
+        var players = level().getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox());
+        for (ServerPlayer p : players) {
+
+            long now = level().getGameTime();
+            var nbt = p.getPersistentData();
+
+            // cooldown 1s pour éviter TP en boucle
+            if (nbt.contains(NBT_RIFT_CD) && now < nbt.getLong(NBT_RIFT_CD)) {
+                continue;
             }
+            nbt.putLong(NBT_RIFT_CD, now + 20);
 
-            var players = level().getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox());
-            for (ServerPlayer p : players) {
-
-                long now = level().getGameTime();
-                var nbt = p.getPersistentData();
-
-                // cooldown 1s pour éviter TP en boucle
-                if (nbt.contains(NBT_RIFT_CD) && now < nbt.getLong(NBT_RIFT_CD)) {
-                    continue;
-                }
-                nbt.putLong(NBT_RIFT_CD, now + 20);
-
-                HouseTeleporter.handleTeleportKey(p);
-                // on NE discard PAS : la faille reste active durant sa vie
-            }
+            HouseTeleporter.handleTeleportKey(p);
         }
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
-        // rien à lire
-    }
+    protected void readAdditionalSaveData(CompoundTag tag) {}
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
-        // rien à sauvegarder
-    }
+    protected void addAdditionalSaveData(CompoundTag tag) {}
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {

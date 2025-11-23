@@ -8,10 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.ravadael.dimensionhouse.entity.ModEntities;
-import net.ravadael.dimensionhouse.entity.RiftEntity;
 
 public class HouseTeleporter {
 
@@ -121,7 +118,7 @@ public class HouseTeleporter {
         player.teleportTo(targetWorld, safePos.x, safePos.y, safePos.z, yawAway, pitchOut);
 
         // Spawn de la faille de retour (30s), sauf si déjà là
-        spawnReturnRiftIfAbsent(targetWorld, portalPos);
+        //spawnReturnRiftIfAbsent(targetWorld, portalPos);
 
     }
 
@@ -161,17 +158,6 @@ public class HouseTeleporter {
         if (!level.isEmptyBlock(feet.above())) return false;
 
         return true;
-    }
-
-    private static void spawnReturnRiftIfAbsent(ServerLevel level, Vec3 portalPos) {
-        // évite de spammer plusieurs failles si on revient plusieurs fois
-        AABB box = new AABB(portalPos, portalPos).inflate(1.5);
-        boolean already = !level.getEntitiesOfClass(RiftEntity.class, box).isEmpty();
-        if (already) return;
-
-        RiftEntity rift = new RiftEntity(ModEntities.RIFT.get(), level);
-        rift.setPos(portalPos.x, portalPos.y, portalPos.z);
-        level.addFreshEntity(rift);
     }
 
     private static float yawAwayFromPortal(Vec3 playerPos, Vec3 portalPos) {

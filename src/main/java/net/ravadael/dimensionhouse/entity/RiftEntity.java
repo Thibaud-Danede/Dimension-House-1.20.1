@@ -29,7 +29,7 @@ public class RiftEntity extends Entity {
         super.tick();
 
         // =========================
-        // ✅ CLIENT : pas de particules pour l’instant
+        // ✅ CLIENT : rien à faire
         // =========================
         if (level().isClientSide) {
             return;
@@ -55,7 +55,12 @@ public class RiftEntity extends Entity {
             }
             nbt.putLong(NBT_RIFT_CD, now + 20);
 
+            // Téléportation
             HouseTeleporter.handleTeleportKey(p);
+
+            // ✅ Faille à usage unique : disparaît après traversée
+            this.discard();
+            return; // stoppe le tick car l'entité est supprimée
         }
     }
 
